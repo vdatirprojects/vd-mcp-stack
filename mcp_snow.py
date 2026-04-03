@@ -66,7 +66,7 @@ class ServiceNowMcpServer(BaseMCPServer):
         await super().shutdown()
     
 
-    def register_tools(self, mcp: FastMCP) -> None:
+    def register_tools(self, mcp: FastMCP) -> dict:
         """Register tool endpoints available through FastMCP agent calls."""
 
 
@@ -111,7 +111,7 @@ class ServiceNowMcpServer(BaseMCPServer):
                 raise ValueError("table_name is required")
 
             try:
-                return aggregate(
+                return await aggregate(
                     table_name,
                     sysparm_group_by,
                     sysparm_avg_fields,
@@ -132,7 +132,7 @@ class ServiceNowMcpServer(BaseMCPServer):
     
         # service now get table generic 
         @mcp.tool
-        def service_now_get_table(
+        async def service_now_get_table(
             table_name: str,
             sysparm_query: Optional[str] = None,
             limit: Optional[int] = 200,
@@ -184,7 +184,7 @@ class ServiceNowMcpServer(BaseMCPServer):
                     raise ValueError("limit must be a positive integer")
 
             try:
-                data = get_table(table_name, sysparm_query, limit)
+                data = await get_table(table_name, sysparm_query, limit)
                 return data or {"error": "No data returned from ServiceNow"}
 
             except Exception as e:  # intentionally broad for tool-safe responses
@@ -192,7 +192,7 @@ class ServiceNowMcpServer(BaseMCPServer):
                 return {"error": str(e)}
             
         @mcp.tool
-        def service_now_get_user_details(
+        async def service_now_get_user_details(
             table_name: str = "sys_user",
             sysparm_query: Optional[str] = None,
             limit: Optional[int] = 200,
@@ -250,7 +250,7 @@ class ServiceNowMcpServer(BaseMCPServer):
                     limit = 200
 
             try:
-                data = get_table(table_name, sysparm_query, limit)
+                data = await get_table(table_name, sysparm_query, limit)
                 return data or {"error": "No data returned from ServiceNow"}
 
             except Exception as e:  # intentionally broad for tool-safe response
@@ -267,4 +267,4 @@ if __name__ == "__main__":
     )
 
     mcp = ServiceNowMcpServer(config=config)
-    mcp.run(transport='streamable-http')
+    mcp.run(transport='streamable-http', port=9901, host="0.0.0.0")
